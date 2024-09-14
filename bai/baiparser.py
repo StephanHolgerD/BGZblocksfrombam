@@ -79,3 +79,33 @@ def get_bai_bins(filename,refid):
         #     n_no_coor = "N/A"
         # print(f"Num unplaced unmapped reads: {n_no_coor}")
         # assert bai.tell() == total_size
+def get_header_bytes(filename):
+    refid = 0
+    linear_bin_dict_refid = {}
+    lin_index_binlen = 16384
+    total_size = os.stat(filename).st_size
+    with open(filename, "rb") as bai:
+        magic = read_int32(bai)
+        n_ref = read_uint32(bai)
+        for i in range(n_ref):
+
+            n_bins = read_uint32(bai) 
+            #print("n_bins: ", n_bins)
+            for j in range(n_bins):
+                bin = read_uint32(bai)
+                n_chunks = read_uint32(bai)
+                for k in range(n_chunks):
+                    chunk_beg = read_uint64(bai)
+                    chunk_end = read_uint64(bai)
+                    assert make_virtual_offset(*split_virtual_offset(chunk_beg)) == chunk_beg
+                    assert make_virtual_offset(*split_virtual_offset(chunk_end)) == chunk_end
+                    # coffset<<16|uoffset
+                    #print(f"ref_id: {i} bin: {bin} chunk_beg: {split_virtual_offset(chunk_beg)} chunk_end: {split_virtual_offset(chunk_end)}")
+            n_intv = read_uint32(bai)
+            
+            for k in range(n_intv):
+                ioffset = read_uint64(bai)
+                if i==refid:
+                    return split_virtual_offset(ioffset)
+                    #linear_bin_dict_refid[k*lin_index_binlen]=ioffset
+    #return linear_bin_dict_refid   

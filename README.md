@@ -1,9 +1,8 @@
 
-* used  https://github.com/betteridiot/bamnostic bai parser
+* used  https://github.com/oyvinev/bam-inspection bai parser
 
 # requirements
 * pysam 
-* bamnostic
 * biopython
 * io
 * gzip

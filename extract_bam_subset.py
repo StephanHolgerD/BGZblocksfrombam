@@ -4,11 +4,18 @@ from Bio import bgzf
 import io
 import gzip
 import pysam
+import requests
+from requests.adapters import HTTPAdapter, Retry
 
+import zlib
+import struct
 from bai.baiparser import get_bai_bins, get_header_bytes
 
 # Block gzip end of file marker
+_bgzf_magic = b"\x1f\x8b\x08\x04"
+_bgzf_header = b"\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00\x42\x43\x02\x00"
 _bgzf_eof = b"\x1f\x8b\x08\x04\x00\x00\x00\x00\x00\xff\x06\x00BC\x02\x00\x1b\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+_bytes_BC = b"BC"
 
 # Function to initialize the BAI index and BAM header
 def initialize_bam(bam_file, bai_file):
@@ -18,37 +25,97 @@ def initialize_bam(bam_file, bai_file):
 
 # Function to read the BAM header bytes
 def read_bam_header(bam_file, header_bytes):
-    with open(bam_file, 'rb') as f:
-        header = f.read(header_bytes)  # Read header bytes
+    if bam_file.startswith('https'):
+        
+        if header_bytes[0]==0:
+            headers = {"Range": f"bytes=0-{20_000}"}
+            print(headers)
+            with requests.Session() as s:
+                s.mount('https://', HTTPAdapter(max_retries=5))
+                response = s.get(bam_file,headers=headers)
+
+            values = []
+            
+            header_block = response.content
+            filehndl = io.BytesIO(header_block)
+
+            for n,x in enumerate(bgzf.BgzfBlocks(filehndl)):
+                values.append(x)
+                break
+            header_block_cln = header_block[:values[0][1]]
+            
+            
+            block= gzip.decompress(header_block_cln)[:header_bytes[1]]
+            
+            header = bgzip_block(block)
+            
+            
+            
+            
+        else:
+            header_bytes=header_bytes[0]
+            headers = {"Range": f"bytes=0-{header_bytes-1}"}
+            print(headers)
+            with requests.Session() as s:
+                s.mount('https://', HTTPAdapter(max_retries=5))
+                response = s.get(bam_file,headers=headers)
+                header = response.content
+        
+    else:
+        with open(bam_file, 'rb') as f:
+            header = f.read(header_bytes[0])  # Read header bytes
     return header
 
 # Function to query the BAM region and extract relevant blocks
+
+
+def bgzip_block(block):
+    
+    c = zlib.compressobj(
+    6, zlib.DEFLATED, -15, zlib.DEF_MEM_LEVEL, 0
+    )
+    compressed = c.compress(block) + c.flush()
+    bsize = struct.pack("<H", len(compressed) + 25)  # includes -1
+    crc = struct.pack("<I", zlib.crc32(block) & 0xFFFFFFFF)
+    uncompressed_length = struct.pack("<I", len(block))
+    
+    
+    
+    clean_block =  _bgzf_header + bsize + compressed + crc + uncompressed_length
+    return clean_block
 def extract_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords, padd):
-    x = get_bai_bins(bai_file,ref_id)
-    start_offset={k:v for n,(k,v) in enumerate(zip(x.keys(),x.values())) if k<=start_coords and list(x.keys())[n+1]>start_coords}
-    start_startb,start_startoff = bgzf.split_virtual_offset(list(start_offset.values())[0])
+    bai_bins = get_bai_bins(bai_file,ref_id)
+    print(bai_bins)
+    start_startb,start_startoff = get_start(bai_bins,start_coords)
+    end_startb,end_startoff = get_end(bai_bins,end_coords,start_startb)
     
     
     
-    
-    end_offset_k=[k for n,(k,v) in enumerate(zip(x.keys(),x.values())) if k>end_coords and bgzf.split_virtual_offset(v)[0]>start_startb][0]
-    
-    
-    
-    end_offset={end_offset_k:x[end_offset_k]}
-    end_startb,end_startoff = bgzf.split_virtual_offset(list(end_offset.values())[0])
-
-
-    
-    with open(bam_file,'rb')as f:
-        f.seek(start_startb)
-        chunk1 = f.read(end_startb-start_startb)
-        chunk2 = f.read(20_000)
+    if bam_file.startswith('https'):
+        headers1 = {"Range": f"bytes={start_startb}-{end_startb-1}"}
+        headers2 = {"Range": f"bytes={end_startb}-{end_startb+20_000}"}
+        
+        print(headers1)
+        print(headers2)
+        with requests.Session() as s:
+            s.mount('https://', HTTPAdapter(max_retries=5))
+            response1 = s.get(bam_file,headers=headers1)
+            chunk1=response1.content
+            response2 = s.get(bam_file,headers=headers2)
+            chunk2=response2.content
+    else:
+        with open(bam_file,'rb')as f:
+            f.seek(start_startb)
+            chunk1 = f.read(end_startb-start_startb)
+            chunk2 = f.read(20_000)
 
     filehndl = io.BytesIO(chunk1)
     values = [x for x  in bgzf.BgzfBlocks(filehndl)]
     frst_blck = chunk1[:values[0][1]]
-    frst_blck_cln = gzip.compress(gzip.decompress(frst_blck)[start_startoff:])
+    block = gzip.decompress(frst_blck)[start_startoff:]
+
+    frst_blck_cln = bgzip_block(block)
+    
     blks_nofirst_nolast = chunk1[values[0][1]:]
 
 
@@ -63,14 +130,24 @@ def extract_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords, pad
         break
 
     frst_blck_end = chunk2[:values[0][1]]
-    frst_blck_end_cln = gzip.compress(gzip.decompress(frst_blck_end)[:end_startoff])
-    
+    block = gzip.decompress(frst_blck_end)[:end_startoff]
+    frst_blck_end_cln = bgzip_block(block)
     
     return frst_blck_cln,blks_nofirst_nolast,frst_blck_end_cln
     #blks_nofirst_nolast = chunk1[values[0][1]:]
 
+def get_start(bai_bins,start_coords):
+    start_offset={k:v for n,(k,v) in enumerate(zip(bai_bins.keys(),bai_bins.values())) 
+                  if k<=start_coords and list(bai_bins.keys())[n+1]>start_coords}
+    start_startb,start_startoff = bgzf.split_virtual_offset(list(start_offset.values())[0])
+    return start_startb,start_startoff
 
-
+def get_end(bai_bins,end_coords,start_startb):
+    end_offset_k=[k for n,(k,v) in enumerate(zip(bai_bins.keys(),bai_bins.values())) 
+                  if k>end_coords and bgzf.split_virtual_offset(v)[0]>start_startb][0]
+    end_offset={end_offset_k:bai_bins[end_offset_k]}
+    end_startb,end_startoff = bgzf.split_virtual_offset(list(end_offset.values())[0])
+    return end_startb,end_startoff
 
 # Function to write the extracted region to a new BAM file
 def write_bam_region(output_file, header_bytes, first_block, middle_blocks, last_block):
@@ -92,7 +169,9 @@ def extract_bam_region_to_file(bam_file, bai_file, chromosome, start_coords, end
     ref_id = headerobject.get_tid(chromosome)
     print(f"Reference ID for {chromosome} is {ref_id}")
 
-    header_end = get_header_bytes(bai_file)[0]
+    header_end = get_header_bytes(bai_file)
+    
+    
     header = read_bam_header(bam_file, header_end)
 
     first_block, middle_blocks, last_block = extract_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords, padd=100000)

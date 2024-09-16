@@ -1,9 +1,6 @@
 from io import BytesIO
 import os
 
-
-
-
 def _read_int(x: BytesIO, n_bytes: int, signed: bool=True) -> int:
     return int.from_bytes(x.read(n_bytes), byteorder="little", signed=signed)
 
@@ -67,11 +64,14 @@ def get_bai_bins(filename,refid):
 
              
 def get_header_bytes(filename):
+    print(filename)
     refid = 0
     with open(filename, "rb") as bai:
         magic = read_int32(bai)
         n_ref = read_uint32(bai)
+        print(n_ref)
         for i in range(n_ref):
+            print(i)
 
             n_bins = read_uint32(bai) 
             for j in range(n_bins):
@@ -86,5 +86,4 @@ def get_header_bytes(filename):
             
             for k in range(n_intv):
                 ioffset = read_uint64(bai)
-                if i==refid:
-                    return split_virtual_offset(ioffset)
+                return split_virtual_offset(ioffset)

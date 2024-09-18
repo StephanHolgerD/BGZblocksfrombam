@@ -5,14 +5,30 @@ from Bio import bgzf
 import gzip
 from bgzf.block import bgzip_block
 
+from settings import log_settings  
+import logging
+
+logging.basicConfig(
+        stream=log_settings.stream,
+        level=log_settings.level,
+        format=log_settings.format
+        )
+
 
 # Function to read the BAM header bytes
 def read_bam_header(bam_file, header_bytes):
+    logging.info(f'input {bam_file, header_bytes}')
+    
     if bam_file.startswith('https'):
+        logging.info(f'BAM file  {bam_file} is remote')
+        
         
         if header_bytes[0]==0:
+            logging.info(f'BAM header and first data block mixed')
+            
             headers = {"Range": f"bytes=0-{20_000}"}
-            print(headers)
+            logging.info(f'request header with {headers} to get first block which includes the header')
+
             with requests.Session() as s:
                 s.mount('https://', HTTPAdapter(max_retries=5))
                 response = s.get(bam_file,headers=headers)
@@ -28,6 +44,7 @@ def read_bam_header(bam_file, header_bytes):
             header_block_cln = header_block[:values[0][1]]
             
             
+            logging.info(f'decompress first block and read until offset where header ends {header_bytes[1]}')
             block= gzip.decompress(header_block_cln)[:header_bytes[1]]
             
             header = bgzip_block(block)
@@ -36,9 +53,12 @@ def read_bam_header(bam_file, header_bytes):
             
             
         else:
+            logging.info(f'BAM header and first data block not mixed')
+            
             header_bytes=header_bytes[0]
             headers = {"Range": f"bytes=0-{header_bytes-1}"}
-            print(headers)
+            logging.info(f'request header with {headers}')
+            
             with requests.Session() as s:
                 s.mount('https://', HTTPAdapter(max_retries=5))
                 response = s.get(bam_file,headers=headers)

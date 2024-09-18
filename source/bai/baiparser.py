@@ -1,6 +1,16 @@
 from io import BytesIO
 import os
 
+from settings import log_settings  
+
+import logging
+
+logging.basicConfig(
+        stream=log_settings.stream,
+        level=log_settings.level,
+        format=log_settings.format
+        )
+
 def _read_int(x: BytesIO, n_bytes: int, signed: bool=True) -> int:
     return int.from_bytes(x.read(n_bytes), byteorder="little", signed=signed)
 
@@ -64,14 +74,13 @@ def get_bai_bins(filename,refid):
 
              
 def get_header_bytes(filename):
-    print(filename)
+    logging.info(f'input {filename}')
+    
     refid = 0
     with open(filename, "rb") as bai:
         magic = read_int32(bai)
         n_ref = read_uint32(bai)
-        print(n_ref)
         for i in range(n_ref):
-            print(i)
 
             n_bins = read_uint32(bai) 
             for j in range(n_bins):

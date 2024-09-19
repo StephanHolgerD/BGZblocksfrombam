@@ -9,21 +9,12 @@ import io
 
 
 
-from settings import log_settings  
-
-import logging
-
-logging.basicConfig(
-        stream=log_settings.stream,
-        level=log_settings.level,
-        format=log_settings.format
-        )
-
+from settings.log_settings import logger
 
 def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords, padd):
     
     
-    logging.info(f'input {bai_file, bam_file, ref_id, start_coords, end_coords, padd}')
+    logger.info(f'input {bai_file, bam_file, ref_id, start_coords, end_coords, padd}')
     
     bai_bins = get_bai_bins(bai_file,ref_id)
     start_startb,start_startoff = get_start(bai_bins,start_coords)
@@ -32,7 +23,7 @@ def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords, padd):
     
     
     if bam_file.startswith('https'):
-        logging.info(f'BAM file  {bam_file} is remote')
+        logger.info(f'BAM file  {bam_file} is remote')
         
         headers1 = {"Range": f"bytes={start_startb}-{end_startb-1}"}
         headers2 = {"Range": f"bytes={end_startb}-{end_startb+20_000}"}

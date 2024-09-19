@@ -3,15 +3,10 @@ import zlib
 import struct
 from bgzf.bgzf_marker import _bgzf_header
 
-import logging
-from settings import log_settings  
-logging.basicConfig(
-        stream=log_settings.stream,
-        level=log_settings.level,
-        format=log_settings.format
-        )
+from settings.log_settings import logger
+
 def bgzip_block(block):
-    logging.info(f'clean data block')
+    logger.info(f'clean data block')
     
     c = zlib.compressobj(
     6, zlib.DEFLATED, -15, zlib.DEF_MEM_LEVEL, 0

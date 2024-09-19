@@ -1,15 +1,8 @@
 from io import BytesIO
 import os
 
-from settings import log_settings  
+from settings.log_settings import logger
 
-import logging
-
-logging.basicConfig(
-        stream=log_settings.stream,
-        level=log_settings.level,
-        format=log_settings.format
-        )
 
 def _read_int(x: BytesIO, n_bytes: int, signed: bool=True) -> int:
     return int.from_bytes(x.read(n_bytes), byteorder="little", signed=signed)
@@ -74,7 +67,7 @@ def get_bai_bins(filename,refid):
 
              
 def get_header_bytes(filename):
-    logging.info(f'input {filename}')
+    logger.info(f'input {filename}')
     
     refid = 0
     with open(filename, "rb") as bai:

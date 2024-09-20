@@ -8,7 +8,10 @@ def get_start(bai_bins,start_coords):
     
     start_offset={k:v for n,(k,v) in enumerate(zip(bai_bins.keys(),bai_bins.values())) 
                   if k<=start_coords and list(bai_bins.keys())[n+1]>start_coords}
-    start_startb,start_startoff = bgzf.split_virtual_offset(list(start_offset.values())[0])
+    if len(start_offset)!=0:
+        start_startb,start_startoff = bgzf.split_virtual_offset(list(start_offset.values())[0])
+    else:
+        start_startb,start_startoff = bgzf.split_virtual_offset(list(bai_bins.values())[0])
     logger.info(f'start in file {start_startb,start_startoff}')
     
     return start_startb,start_startoff

@@ -62,7 +62,7 @@ def get_bai_bins(filename,refid):
             for k in range(n_intv):
                 ioffset = read_uint64(bai)
                 if i==refid:
-                    if refid!=0 and ioffset!=0:
+                    if ioffset!=0:
                         linear_bin_dict_refid[k*lin_index_binlen]=ioffset
     return linear_bin_dict_refid   
 

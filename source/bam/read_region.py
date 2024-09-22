@@ -11,13 +11,12 @@ import io
 
 from settings.log_settings import logger
 
-def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords, padd):
+def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords):
     
     
-    logger.info(f'input {bai_file, bam_file, ref_id, start_coords, end_coords, padd}')
+    logger.info(f'input {bai_file, bam_file, ref_id, start_coords, end_coords}')
     
     bai_bins = get_bai_bins(bai_file,ref_id)
-    print(bai_bins)
     start_startb,start_startoff = get_start(bai_bins,start_coords)
     end_startb,end_startoff = get_end(bai_bins,end_coords,start_startb)
     

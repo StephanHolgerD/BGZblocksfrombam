@@ -24,16 +24,16 @@ def parse_args():
     
     
 
-    optArguments = bed_parser.add_argument_group('optional arguments')
-    optArguments.add_argument('--threads',default=1, help="number of cpu's  to run in paralell, ROI <1000 will always use 1 core",type=int)
-    optArguments.add_argument('-p','--padding', help='number of nt around the region', default=25,type=int)
+    # optArguments = bed_parser.add_argument_group('optional arguments')
+    # optArguments.add_argument('--threads',default=1, help="number of cpu's  to run in paralell, ROI <1000 will always use 1 core",type=int)
+    # optArguments.add_argument('-p','--padding', help='number of nt around the region', default=25,type=int)
 
 
     
 
-    optArguments = region_parser.add_argument_group('optional arguments')
-    optArguments.add_argument('--threads',default=1, help="number of cpu's  to run in paralell, ROI <1000 will always use 1 core",type=int)
-    optArguments.add_argument('-p','--padding', help='number of nt around the region', default=25,type=int)
+    # optArguments = region_parser.add_argument_group('optional arguments')
+    # optArguments.add_argument('--threads',default=1, help="number of cpu's  to run in paralell, ROI <1000 will always use 1 core",type=int)
+    # optArguments.add_argument('-p','--padding', help='number of nt around the region', default=25,type=int)
 
     # if len(sys.argv)==1:
     #     parser.print_help(sys.stderr)

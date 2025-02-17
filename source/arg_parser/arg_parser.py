@@ -1,5 +1,5 @@
 import argparse
-
+import sys
 def parse_args():
     parser = argparse.ArgumentParser(description='extract region from bam local or remote')
     subparsers = parser.add_subparsers(help='extract region from bam file using region string or bed')
@@ -34,8 +34,17 @@ def parse_args():
     # optArguments = region_parser.add_argument_group('optional arguments')
     # optArguments.add_argument('--threads',default=1, help="number of cpu's  to run in paralell, ROI <1000 will always use 1 core",type=int)
     # optArguments.add_argument('-p','--padding', help='number of nt around the region', default=25,type=int)
-
-    # if len(sys.argv)==1:
-    #     parser.print_help(sys.stderr)
-    #     sys.exit(1)
-    return parser
+    print(sys.argv)
+    if len(sys.argv)==1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+    elif len(sys.argv)==2:
+        if sys.argv[-1]=='region':
+            region_parser.print_help(sys.stderr)
+            sys.exit(1)
+        if sys.argv[-1]=='bed':
+            bed_parser.print_help(sys.stderr)
+            sys.exit(1)
+        
+    else:
+        return parser.parse_args()

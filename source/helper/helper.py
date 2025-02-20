@@ -1,4 +1,4 @@
-from settings.log_settings import logger
+from BGZblocksfrombam.source.settings.log_settings import logger
 import pysam
 
 

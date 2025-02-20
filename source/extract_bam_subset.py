@@ -6,19 +6,20 @@ import gzip
 import pysam
 import requests
 from requests.adapters import HTTPAdapter, Retry
-from helper.helper import collapse_bed
-from bai.baiparser import get_bai_bins, get_header_bytes
-from bam.read_header import read_bam_header
-from bam.read_region import read_bam_region
-from bgzf.bgzf_marker import _bgzf_eof
+from BGZblocksfrombam.source.helper.helper import collapse_bed
+from BGZblocksfrombam.source.bai.baiparser import get_bai_bins, get_header_bytes
+from BGZblocksfrombam.source.bam.read_header import read_bam_header
+from BGZblocksfrombam.source.bam.read_region import read_bam_region
+from BGZblocksfrombam.source.bgzf.bgzf_marker import _bgzf_eof
+from time import sleep
 
-
+import os
 
 from multiprocessing import Pool
 
 import tempfile 
 
-from arg_parser.arg_parser import parse_args
+from BGZblocksfrombam.source.arg_parser.arg_parser import parse_args
 # Function to initialize the BAI index and BAM header
 def initialize_bam(bam_file, bai_file):
     with pysam.AlignmentFile(bam_file, "rb") as bam:
@@ -58,7 +59,7 @@ def get_remote_bai(bai_file):
 def extract_bam_region_to_file(bam_file, bai_file, chromosome, start_coords, end_coords, output_file):
     headerobject = initialize_bam(bam_file, bai_file)
     ref_id = headerobject.get_tid(chromosome)
-    print(f"Reference ID for {chromosome} is {ref_id}")
+    #print(f"Reference ID for {chromosome} is {ref_id}")
 
     if 'https' in bai_file:
 
@@ -77,7 +78,8 @@ def extract_bam_region_to_file(bam_file, bai_file, chromosome, start_coords, end
     write_bam_region(output_file, header, first_block, middle_blocks, last_block)
 
 
-def extract_bam_bed_to_file(bam_file, bai_file,bedfile, output_file,padding=5000,processes=20):
+def extract_bam_bed_to_file(bam_file, bai_file,bedfile, output_file,padding=2*16384,processes=12):
+    #padding is linbin size from bam index
     blocks = []
     multi_args = []
 
@@ -103,13 +105,13 @@ def extract_bam_bed_to_file(bam_file, bai_file,bedfile, output_file,padding=5000
         start_coords = int(start_coords)
         end_coords = int(end_coords)
         ref_id = headerobject.get_tid(chromosome)
-        print(f"Reference ID for {chromosome} is {ref_id}")
 
 
         multi_args.append((bai_file, bam_file, ref_id, start_coords, end_coords))
 
+    print(os.path.exists(bai_file))
     with Pool(processes=processes) as p:
-
+        sleep(5)
         blocks = p.starmap(read_bam_region,multi_args)
 
         #first_block, middle_blocks, last_block = read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords)

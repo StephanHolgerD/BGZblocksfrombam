@@ -1,7 +1,7 @@
 from io import BytesIO
 import os
 
-from settings.log_settings import logger
+from BGZblocksfrombam.source.settings.log_settings import logger
 
 
 def _read_int(x: BytesIO, n_bytes: int, signed: bool=True) -> int:

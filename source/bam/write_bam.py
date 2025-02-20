@@ -1,6 +1,6 @@
 # Function to write the extracted region to a new BAM file
-from bgzf.bgzf_marker import _bgzf_eof
-from settings.log_settings import logger
+from BGZblocksfrombam.source.bgzf.bgzf_marker import _bgzf_eof
+from BGZblocksfrombam.source.settings.log_settings import logger
 import pysam
 import os
 

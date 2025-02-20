@@ -2,19 +2,18 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import gzip
 from Bio import bgzf
-from bam.calculate_region import get_end,get_start
-from bgzf.block import bgzip_block
-from bai.baiparser import get_bai_bins
+from BGZblocksfrombam.source.bam.calculate_region import get_end,get_start
+from BGZblocksfrombam.source.bgzf.block import bgzip_block
+from BGZblocksfrombam.source.bai.baiparser import get_bai_bins
 import io
 
 
 
-from settings.log_settings import logger
+from BGZblocksfrombam.source.settings.log_settings import logger
 
 def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords):
     
     
-    logger.info(f'input {bai_file, bam_file, ref_id, start_coords, end_coords}')
     
     bai_bins = get_bai_bins(bai_file,ref_id)
     start_startb,start_startoff = get_start(bai_bins,start_coords)
@@ -23,10 +22,10 @@ def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords):
     
     
     if bam_file.startswith('https'):
-        logger.info(f'BAM file  {bam_file} is remote')
+        logger.info(f'BAM file  is remote')
         
         headers1 = {"Range": f"bytes={start_startb}-{end_startb-1}"}
-        headers2 = {"Range": f"bytes={end_startb}-{end_startb+20_000}"}
+        headers2 = {"Range": f"bytes={end_startb}-{end_startb+50_000}"}
         with requests.Session() as s:
             s.mount('https://', HTTPAdapter(max_retries=5))
             response1 = s.get(bam_file,headers=headers1)
@@ -37,7 +36,7 @@ def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords):
         with open(bam_file,'rb')as f:
             f.seek(start_startb)
             chunk1 = f.read(end_startb-start_startb)
-            chunk2 = f.read(20_000)
+            chunk2 = f.read(50_000)
 
     filehndl = io.BytesIO(chunk1)
     values = [x for x  in bgzf.BgzfBlocks(filehndl)]
@@ -54,7 +53,7 @@ def read_bam_region(bai_file, bam_file, ref_id, start_coords, end_coords):
 
     values = []
 
-
+    logger.info(f'input {ref_id, start_coords, end_coords}')
     for n,x in enumerate(bgzf.BgzfBlocks(filehndl)):
         values.append(x)
         break

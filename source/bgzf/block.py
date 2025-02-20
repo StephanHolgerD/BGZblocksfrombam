@@ -1,9 +1,9 @@
 
 import zlib
 import struct
-from bgzf.bgzf_marker import _bgzf_header
+from BGZblocksfrombam.source.bgzf.bgzf_marker import _bgzf_header
 
-from settings.log_settings import logger
+from BGZblocksfrombam.source.settings.log_settings import logger
 
 def bgzip_block(block):
     logger.info(f'clean data block')

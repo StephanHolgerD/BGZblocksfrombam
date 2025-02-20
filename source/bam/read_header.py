@@ -3,8 +3,8 @@ from requests.adapters import HTTPAdapter, Retry
 import io
 from Bio import bgzf
 import gzip
-from bgzf.block import bgzip_block
-from settings.log_settings import logger
+from BGZblocksfrombam.source.bgzf.block import bgzip_block
+from BGZblocksfrombam.source.settings.log_settings import logger
 
 
 # Function to read the BAM header bytes
